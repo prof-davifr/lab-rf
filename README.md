@@ -60,12 +60,12 @@ Se o Mint perguntar se confia no atalho da Área de Trabalho, escolha **Confiar 
 Os notebooks ficam na pasta **Documentos/openEMS-notebooks**. Uma reinstalação nunca apaga
 estes arquivos: ela só copia os notebooks novos.
 
-## Antena para fabricar e medir
+## Sensor para fabricar e medir
 
-A pasta [fabricacao/patch_2g45](fabricacao/patch_2g45) tem uma antena patch de 2,45 GHz em
-FR-4 para fresar na CNC e medir no VNA: Gerber, roteiro de fabricação e de medição,
-resultados simulados (S11, carta de Smith, diagrama de radiação) e um script que compara a
-medição com a simulação.
+A pasta [fabricacao/patch_2g45](fabricacao/patch_2g45) tem um sensor patch pequeno de
+2,45 GHz em FR-4 para fresar na CNC e medir no VNA: Gerber, roteiro de fabricação e de
+medição, resultados simulados no ar e sobre um revestimento de polímero com 0 a 10 % de
+água, e um script que compara a medição com a simulação e estima a umidade.
 
 ## Onde ficam as coisas
 

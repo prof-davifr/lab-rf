@@ -1,12 +1,25 @@
-# Antena patch de 2,45 GHz: fabricar na CNC e medir no VNA
+# Sensor patch de 2,45 GHz para umidade: fabricar na CNC e medir no VNA
 
-Uma antena patch retangular em FR-4, alimentada por uma linha de microfita com inset, com
-um conector SMA na borda da placa. Ela ressoa em 2,45 GHz, na faixa do Wi-Fi.
+Um sensor patch pequeno (placa de 45 x 32 mm) em FR-4, alimentado por uma linha de
+microfita com inset, com um conector SMA na borda da placa. O patch fica voltado para
+um revestimento de polímero sobre metal. A água no polímero muda a ressonância e o S11.
 
-O objetivo é fabricar a placa na fresadora CNC, medir o S11 no VNA e comparar a medição
-com a simulação.
+O trabalho tem duas etapas:
+
+1. fabricar a placa na CNC e validar a antena no ar, contra a simulação;
+2. medir o revestimento seco e úmido e comparar com as curvas de calibração simuladas.
 
 ![desenho cotado](resultados/desenho_cotado.png)
+
+## Por que 2,45 GHz
+
+- A água tem er perto de 77 em 2,45 GHz; o polímero seco tem perto de 4. Um pouco de água
+  muda muito a permissividade do revestimento.
+- A água também tem perdas altas em 2,45 GHz (e'' perto de 9). Assim, a água muda duas
+  grandezas: a frequência da ressonância (pela parte real) e o S11 mínimo (pelas perdas).
+- Abaixo de 1 GHz, os sais dissolvidos na água pesam mais que a própria água. Acima de
+  10 GHz, o campo do sensor entra pouco no revestimento. 2,45 GHz fica no meio, numa
+  faixa ISM, e dentro de um VNA de 3 GHz.
 
 ## O que tem nesta pasta
 
@@ -15,27 +28,33 @@ com a simulação.
 | `patch_2g45_gerber.zip` | os três Gerber num arquivo só, para levar para o computador da CNC |
 | `gerber/patch_2g45-F_Cu.gbr` | cobre de cima: patch e linha (é a única face que vai à fresa) |
 | `gerber/patch_2g45-B_Cu.gbr` | cobre de baixo: plano de terra inteiro (não fresar) |
-| `gerber/patch_2g45-Edge_Cuts.gbr` | contorno da placa, 70 x 70 mm |
+| `gerber/patch_2g45-Edge_Cuts.gbr` | contorno da placa, 45 x 32 mm |
 | `resultados/desenho_cotado.png` | dimensões, para conferir a placa com o paquímetro |
-| `resultados/resumo.md` | tabela com os resultados esperados |
-| `resultados/s11_simulado.s1p` | S11 simulado em Touchstone, para abrir no programa do VNA |
-| `resultados/s11_simulado.csv` | o mesmo S11, com a impedância de entrada, para planilha |
-| `resultados/s11_variacoes.csv` | S11 das variações (FR-4 diferente, fresa, espessura) |
-| `resultados/s11.png`, `smith.png`, `diagrama.png` | gráficos dos resultados esperados |
-| `comparar.py` | compara o seu `.s1p` medido com a simulação |
+| `resultados/resumo.md` | tabelas com os resultados esperados das duas etapas |
+| `resultados/s11_ar.s1p` | S11 simulado no ar, em Touchstone, para abrir no programa do VNA |
+| `resultados/s11_amostra_seca.s1p` | S11 simulado sobre a amostra seca |
+| `resultados/calibracao_umidade.csv` | ressonância e S11 mínimo para cada fração de água |
+| `resultados/s11_ar_variacoes.csv`, `s11_amostra.csv` | todas as curvas simuladas, para planilha |
+| `resultados/*.png` | gráficos dos resultados esperados |
+| `comparar.py` | compara as suas medições (`.s1p`) com a simulação e estima a água |
 | `geometria.py`, `simular.py` | geram o Gerber e refazem a simulação |
 
 Não há arquivo de furação: o SMA de borda não precisa de furo.
 
 ## Material
 
-- Placa de FR-4 de face dupla, 1,6 mm, cobre de 35 µm (1 oz), com pelo menos 70 x 70 mm.
+- Placa de FR-4 de face dupla, 1,6 mm, cobre de 35 µm (1 oz), com pelo menos 45 x 32 mm.
 - Um conector SMA fêmea de borda (*end launch*) para placa de 1,6 mm.
 - Fresas: uma em V (ou de 0,2 a 0,4 mm) para o contorno do cobre, uma de topo de 1 a 2 mm
   para remover o cobre e uma de 1 a 2 mm para cortar a placa.
-- Paquímetro, ferro de solda, estanho e álcool isopropílico.
+- Quatro espaçadores de plástico de 3 mm (arruelas de náilon, por exemplo).
+- Amostras: chapas de metal com 10 mm de revestimento de polímero, de pelo menos
+  100 x 80 mm. Uma fica seca, como referência.
+- Paquímetro, balança, ferro de solda, estanho e álcool isopropílico.
 
-## Fabricação na CNC
+## Etapa 1: fabricar e validar no ar
+
+### Fabricação na CNC
 
 1. Abra `patch_2g45-F_Cu.gbr` e `patch_2g45-Edge_Cuts.gbr` no programa de CAM (FlatCAM, por
    exemplo). As unidades são milímetros e a origem é o canto inferior esquerdo da placa.
@@ -54,7 +73,7 @@ Não há arquivo de furação: o SMA de borda não precisa de furo.
 A fresa em V corta mais largo quando desce mais. Se a folga do inset medir mais que 1,2 mm,
 diminua a profundidade de corte na próxima placa.
 
-## Montagem do SMA
+### Montagem do SMA
 
 1. Encaixe o SMA na borda, com o pino central apoiado sobre a linha, no centro dela.
 2. Solde as duas pernas de baixo no plano de terra. As pernas de cima ficam sem solda,
@@ -63,84 +82,135 @@ diminua a profundidade de corte na próxima placa.
 4. Limpe o fluxo com álcool isopropílico.
 5. Meça com o multímetro: o pino central não pode ter continuidade com o plano de terra.
 
-## Medição no VNA
+### Medição no ar
 
-1. Configure a varredura de 2,0 a 3,0 GHz, com pelo menos 201 pontos.
+1. Configure a varredura de 2,0 a 3,0 GHz, com pelo menos 401 pontos.
 2. Ligue o cabo que vai ficar na antena e calibre na ponta dele: aberto, curto e carga de
    50 ohm (calibração SOL). Assim o plano de referência fica no conector, como na simulação.
-3. Ligue a antena. Deixe-a longe de mesa metálica, de paredes e das mãos (pelo menos 30 cm),
-   com o patch para o espaço livre.
-4. Salve a medição em Touchstone (`.s1p`).
-5. Anote a frequência do mínimo do S11, o valor do mínimo e a faixa onde o S11 fica abaixo
-   de -10 dB.
-6. Encoste a mão perto do patch e veja a curva mudar. A antena sente tudo o que fica perto dela.
+3. Ligue a antena. Deixe-a longe de mesa metálica, de paredes e das mãos (pelo menos 30 cm).
+4. Salve a medição em Touchstone (por exemplo, `ar.s1p`) e rode:
 
-Para comparar com a simulação, rode no openEMS Lab (ou em qualquer Python com numpy e
-matplotlib):
+   ```bash
+   python comparar.py ar.s1p
+   ```
 
-```bash
-python comparar.py minha_medicao.s1p
-```
+O script mostra a ressonância medida e a simulada, faz o gráfico `comparar.png` e estima o
+er do FR-4 da sua placa.
 
-O script mostra os números das duas curvas, faz o gráfico `comparar.png` e estima o er do FR-4
-da sua placa.
-
-## Resultados esperados
-
-Simulação no openEMS, com o plano de referência na borda da placa (entrada do SMA). A
-tabela completa está em [`resultados/resumo.md`](resultados/resumo.md).
+### Resultados esperados no ar
 
 | Caso | Ressonância | S11 mínimo | Faixa com S11 < -10 dB |
 |---|---|---|---|
-| **nominal** (er = 4,4, 1,6 mm) | **2,448 GHz** | **-31,7 dB** | **2,416 a 2,480 GHz (64 MHz)** |
-| FR-4 com er = 4,2 | 2,503 GHz | -32,1 dB | 2,470 a 2,536 GHz |
-| FR-4 com er = 4,6 | 2,396 GHz | -28,0 dB | 2,365 a 2,428 GHz |
-| fresa come 0,1 mm por borda | 2,463 GHz | -27,6 dB | 2,431 a 2,495 GHz |
-| placa com 1,5 mm | 2,451 GHz | -25,1 dB | 2,422 a 2,481 GHz |
+| **nominal** (FR-4 com er = 4,4) | **2,420 GHz** | **-11,9 dB** | **2,404 a 2,436 GHz** |
+| FR-4 com er = 4,2 | 2,473 GHz | -11,4 dB | 2,459 a 2,488 GHz |
+| FR-4 com er = 4,6 | 2,370 GHz | -12,6 dB | 2,352 a 2,387 GHz |
+| fresa come 0,1 mm por borda | 2,428 GHz | -8,6 dB | não chega a -10 dB |
 
-Na ressonância, a impedância de entrada é 47,6 + 1,0j ohm. A diretividade é 6,8 dBi, a
-eficiência de radiação é 41 % e o ganho realizado é 3,0 dBi. A eficiência é baixa porque o
-FR-4 tem muitas perdas em 2,4 GHz. Com uma malha mais fina (0,7 mm em vez de 1 mm), a
-ressonância muda menos de 2 MHz.
+![S11 no ar](resultados/s11_ar.png)
+
+No ar, o mínimo é raso de propósito: o casamento foi ajustado para o sensor sobre a
+amostra, que é a condição de uso. A etapa 1 confere a fabricação pela frequência, e não pela
+profundidade do mínimo.
 
 Critérios para dizer que a placa está boa:
 
-- ressonância entre 2,39 e 2,51 GHz (a faixa que o er do FR-4 permite);
-- S11 mínimo abaixo de -15 dB (o SMA e a solda pioram um pouco o valor simulado);
-- faixa de -10 dB com 55 a 75 MHz de largura.
+- ressonância entre 2,36 e 2,48 GHz (a faixa que o er do FR-4 permite);
+- um mínimo nítido, abaixo de cerca de -8 dB.
 
-Sensibilidades, para entender um desvio:
+Sensibilidades, para entender um desvio no ar:
 
 | O que muda | Efeito na ressonância |
 |---|---|
 | er do FR-4 +0,1 | cerca de -26 MHz |
-| L do patch +0,1 mm | cerca de -8 MHz |
-| fresa come +0,1 mm por borda | cerca de +15 MHz |
-| espessura da placa | quase nada; muda mais o casamento (o S11 mínimo) |
+| L do patch +0,1 mm | cerca de -7 MHz |
+| fresa come +0,1 mm por borda | cerca de +8 MHz, e o mínimo fica mais raso |
 
-![S11 simulado](resultados/s11.png)
+## Etapa 2: medir a umidade no revestimento
 
-| Carta de Smith | Diagrama de radiação |
-|---|---|
-| ![Smith](resultados/smith.png) | ![diagrama](resultados/diagrama.png) |
+### Montagem do sensor sobre a amostra
+
+1. Cole os quatro espaçadores de 3 mm nos cantos da placa, do lado do patch, longe do cobre.
+2. Apoie o sensor sobre a amostra, com o patch voltado para o polímero.
+3. Alinhe a borda do SMA com a borda da amostra. O corpo do SMA passa uns 3 mm além do
+   patch: se a amostra passar por baixo dele, o sensor não assenta e o gap muda.
+4. Marque a posição do sensor na amostra. Meça sempre no mesmo lugar.
+
+### Preparar as amostras úmidas
+
+1. Pese cada amostra seca e anote a massa.
+2. Deixe as amostras em água (ou numa câmara úmida) por tempos diferentes.
+3. Seque a superfície com papel e pese de novo. A massa a mais é a água absorvida.
+4. Calcule a fração de volume de água: (massa de água / 1 g/cm³) / volume do polímero.
+
+A balança dá o valor de referência. O sensor tem de chegar perto dele.
+
+### Medição
+
+1. Configure a varredura de 2,30 a 2,60 GHz, com pelo menos 601 pontos, e calibre de novo.
+2. Meça a amostra seca e salve (por exemplo, `seca.s1p`).
+3. Compare com a simulação da amostra seca:
+
+   ```bash
+   python comparar.py --amostra seca.s1p
+   ```
+
+4. Meça as amostras úmidas e salve um arquivo para cada uma.
+5. Estime a água em cada amostra úmida:
+
+   ```bash
+   python comparar.py --umidade seca.s1p umida_1.s1p umida_2.s1p
+   ```
+
+   A referência é a SUA medição da amostra seca. Assim, o erro do er do FR-4 quase se cancela.
+6. Compare a estimativa do sensor com o valor da balança.
+
+### Resultados esperados sobre a amostra
+
+Amostra simulada: 10 mm de polímero com er = 4 e tand = 0,01 sobre metal, gap de 3 mm.
+A água entra pelo modelo de mistura CRIM.
+
+| Água no polímero | er / tand do polímero | Ressonância | Deslocamento | S11 mínimo |
+|---|---|---|---|---|
+| **0 % (seca)** | **4,00 / 0,010** | **2,451 GHz** | **0** | **-23,0 dB** |
+| 2 % | 4,56 / 0,019 | 2,445 GHz | -7 MHz | -25,7 dB |
+| 4 % | 5,16 / 0,027 | 2,439 GHz | -13 MHz | -28,0 dB |
+| 6 % | 5,80 / 0,034 | 2,433 GHz | -18 MHz | -29,6 dB |
+| 8 % | 6,47 / 0,040 | 2,428 GHz | -24 MHz | -33,5 dB |
+| 10 % | 7,18 / 0,046 | 2,422 GHz | -29 MHz | -33,8 dB |
+
+![S11 sobre a amostra](resultados/s11_amostra.png)
+
+![curvas de calibração](resultados/calibracao_umidade.png)
+
+O que os números dizem:
+
+- Cada 1 % de água desloca a ressonância cerca de -2,9 MHz. Para ver isso, use uma
+  varredura estreita: de 2,30 a 2,60 GHz, com pelo menos 601 pontos (passo de 0,5 MHz).
+  Calibre de novo para esta faixa.
+- As perdas da água deixam o mínimo mais fundo, porque o sensor seco fica um pouco abaixo do
+  casamento perfeito. Com mais perdas, o mínimo pode voltar a subir.
+- O gap pesa muito. Com a amostra seca, um gap de 2 mm dá 2,440 GHz (-11 MHz) e um gap de
+  4 mm dá 2,457 GHz (+6 MHz). Um milímetro de erro no espaçador vale de 2 a 4 % de água.
+  Use espaçadores com 0,1 mm de precisão.
+- Do ar para a amostra seca, a ressonância sobe cerca de 31 MHz (de 2,420 para 2,451 GHz).
+  Esta diferença quase não depende do er do FR-4. Ela confere a montagem antes das medições
+  com água.
 
 ## Como interpretar a comparação
 
-- **A frequência saiu deslocada, mas o mínimo é fundo.** É o caso mais comum. O fabricante
-  do FR-4 não garante o er em 2,4 GHz; ele varia de cerca de 4,2 a 4,6 entre lotes. Confira as
-  dimensões com o paquímetro. Se elas estiverem certas, a diferença vem do er, e o
-  `comparar.py` estima o valor.
+- **No ar, a frequência saiu deslocada, mas o mínimo é fundo.** É o caso mais comum. O
+  fabricante do FR-4 não garante o er em 2,4 GHz; ele varia de cerca de 4,2 a 4,6 entre
+  lotes. Confira as dimensões com o paquímetro. Se elas estiverem certas, a diferença vem do
+  er, e o `comparar.py` estima o valor.
 - **O mínimo ficou raso (acima de -10 dB).** Confira a solda do SMA, a folga e a
   profundidade do inset e se sobrou cobre perto do patch.
 - **Não há ressonância nenhuma.** Confira a calibração, o cabo e a continuidade entre o pino
   central e a linha.
-- **A curva muda quando você se move.** É normal. Meça sempre com a antena na mesma posição.
-
-## Atividade extra: enlace entre duas antenas
-
-Fabrique duas antenas iguais. Num VNA de duas portas, ligue uma antena em cada porta, com os
-patches de frente um para o outro, e meça o S21 em várias distâncias. Compare com a fórmula
-de Friis, usando o ganho realizado da simulação. A tabela está em `resultados/resumo.md`.
+- **Sobre a amostra, a medição muda quando você tira e põe o sensor.** O gap mudou. Confira
+  os espaçadores e se a amostra passa por baixo do SMA.
+- **A estimativa de água fica longe da balança.** O modelo de mistura (CRIM) supõe a água
+  espalhada no polímero. Água só na superfície, ou em bolhas, dá outra curva. Uma curva de
+  calibração medida (sensor contra balança) é o próximo passo do projeto.
 
 ## Como refazer a simulação
 
@@ -149,8 +219,9 @@ terminal (File > New > Terminal), entre na pasta com `cd patch_2g45` e rode:
 
 ```bash
 python geometria.py      # Gerber e desenho cotado (alguns segundos)
-python simular.py        # simulações e gráficos (de 15 a 60 minutos)
+python simular.py        # 12 simulações e gráficos (de 30 a 90 minutos)
 ```
 
-Para mudar a antena, mude os valores da classe `Antena` em `geometria.py`. A simulação e o
-Gerber usam o mesmo polígono, então os dois ficam sempre iguais.
+Para mudar o sensor, mude os valores da classe `Antena` em `geometria.py`. Para mudar a
+amostra (espessura, er, gap), mude a classe `Amostra` em `simular.py`. A simulação e o Gerber
+usam o mesmo polígono, então os dois ficam sempre iguais.

@@ -1,4 +1,4 @@
-"""Geometria da antena patch de 2,45 GHz com alimentação por inset, em FR-4.
+"""Geometria do sensor patch de 2,45 GHz com alimentação por inset, em FR-4.
 
 Este arquivo é a fonte única das dimensões. O Gerber, o desenho cotado e a
 simulação usam o mesmo polígono do cobre de cima.
@@ -32,16 +32,21 @@ NOME = "patch_2g45"
 
 @dataclass(frozen=True)
 class Antena:
-    """Dimensões em mm. Os valores padrão são o projeto final, já ajustado na simulação."""
+    """Dimensões em mm. Os valores padrão são o projeto final.
 
-    L: float = 28.9        # comprimento do patch (define a ressonância)
-    W: float = 37.3        # largura do patch
-    inset: float = 8.8     # profundidade do recorte do inset, a partir da borda do patch
+    O ajuste de L e do inset foi feito com a antena sobre a amostra seca (10 mm de
+    polímero sobre metal, gap de 3 mm), que é a condição de uso do sensor. W e a
+    placa são pequenos de propósito: o sensor não precisa irradiar bem.
+    """
+
+    L: float = 30.0        # comprimento do patch (define a ressonância)
+    W: float = 20.0        # largura do patch
+    inset: float = 13.5    # profundidade do recorte do inset, a partir da borda do patch
     gap: float = 1.0       # folga entre a linha e o patch, dentro do inset
     linha_w: float = 3.0   # largura da linha de 50 ohm
-    placa_x: float = 70.0
-    placa_y: float = 70.0
-    margem_tras: float = 16.0  # da borda de trás do patch até a borda da placa
+    placa_x: float = 45.0
+    placa_y: float = 32.0
+    margem_tras: float = 6.0   # da borda de trás do patch até a borda da placa
     # substrato
     h: float = 1.6
     er: float = 4.4
@@ -208,11 +213,10 @@ def desenhar(antena=None, arquivo=None):
     yt, yb = a.W / 2, -a.W / 2
     cota((xl, yt), (xr, yt), f"L = {a.L} mm", 3)
     cota((xr, yb), (xr, yt), f"W = {a.W} mm", 3, lado="x")
-    cota((xl, -a.linha_w / 2 - a.gap), (xl + a.inset, -a.linha_w / 2 - a.gap),
-         f"inset = {a.inset} mm", -9)
+    cota((xl, yb), (xl + a.inset, yb), f"inset = {a.inset} mm", -3)
     cota((a.x_borda, a.linha_w / 2), (xl, a.linha_w / 2), f"linha {a.comprimento_linha:.1f} mm", 4)
     ax.annotate(f"largura da linha = {a.linha_w} mm\nfolga do inset = {a.gap} mm",
-                (xl + a.inset / 2, -a.linha_w / 2 - a.gap / 2), (a.x_borda + 3, -a.placa_y / 2 + 6),
+                (xl + a.inset / 2, -a.linha_w / 2 - a.gap / 2), (a.x_borda, -a.placa_y / 2 - 13),
                 fontsize=9, arrowprops=dict(arrowstyle="->", lw=0.8))
     cota((a.x_borda, -a.placa_y / 2), (-a.x_borda, -a.placa_y / 2), f"placa {a.placa_x:g} mm", -4)
     cota((-a.x_borda, -a.placa_y / 2), (-a.x_borda, a.placa_y / 2), f"placa {a.placa_y:g} mm", 3,
@@ -221,10 +225,10 @@ def desenhar(antena=None, arquivo=None):
                 arrowprops=dict(arrowstyle="->", lw=0.8))
 
     ax.plot(a.x_borda, -a.placa_y / 2, "ko", ms=4)
-    ax.annotate("origem do Gerber (0, 0)", (a.x_borda, -a.placa_y / 2), (a.x_borda - 14, -a.placa_y / 2 - 8),
+    ax.annotate("origem do Gerber (0, 0)", (a.x_borda, -a.placa_y / 2), (a.x_borda - 14, -a.placa_y / 2 - 3),
                 fontsize=8)
     ax.set_xlim(a.x_borda - 15, -a.x_borda + 10)
-    ax.set_ylim(-a.placa_y / 2 - 10, a.placa_y / 2 + 6)
+    ax.set_ylim(-a.placa_y / 2 - 15, a.placa_y / 2 + 6)
     ax.set_aspect("equal")
     ax.set_xlabel("x (mm)")
     ax.set_ylabel("y (mm)")
