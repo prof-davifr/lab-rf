@@ -1,6 +1,6 @@
 """Geometria do sensor patch de 2,45 GHz com alimentação por inset, em FR-4.
 
-Este arquivo é a fonte única das dimensões. O Gerber, o desenho cotado e a
+Este arquivo é a fonte única das dimensões. O DXF, o Gerber, o desenho cotado e a
 simulação usam o mesmo polígono do cobre de cima.
 
 Sistema de coordenadas (mm), igual ao da simulação:
@@ -11,10 +11,10 @@ Sistema de coordenadas (mm), igual ao da simulação:
     z = h   cobre de cima (patch e linha)
 
 A placa vai de -placa_x/2 a +placa_x/2 em x e de -placa_y/2 a +placa_y/2 em y.
-O conector SMA fica na borda x = -placa_x/2. No Gerber, a origem vai para o
+O conector SMA fica na borda x = -placa_x/2. No DXF e no Gerber, a origem vai para o
 canto inferior esquerdo da placa, como é costume.
 
-Rodar este arquivo grava os Gerber em ./gerber e o desenho cotado em ./resultados:
+Rodar este arquivo grava o DXF, os Gerber em ./gerber e o desenho cotado em ./resultados:
 
     python geometria.py
 """
@@ -181,6 +181,67 @@ def gravar_gerber(antena=None, pasta=None):
     return gravados + [pacote]
 
 
+# ==================================================================== DXF
+
+CAMADAS_DXF = {  # nome: (cor ACI, descrição)
+    "CONTORNO_PLACA": (7, "contorno da placa: corte final"),
+    "COBRE_CIMA": (1, "cobre que fica na face de cima: patch e linha"),
+    "AREA_REMOVER": (5, "cobre que sai da face de cima: placa menos patch e linha"),
+}
+
+
+def _polilinha_dxf(camada, pontos):
+    """POLYLINE fechada do DXF R12 (forma que todos os programas de CAD e CAM leem)."""
+    g = ["0", "POLYLINE", "8", camada, "66", "1", "70", "1", "10", "0.0", "20", "0.0", "30", "0.0"]
+    for x, y in pontos:
+        g += ["0", "VERTEX", "8", camada, "10", f"{x:.4f}", "20", f"{y:.4f}", "30", "0.0"]
+    return g + ["0", "SEQEND", "8", camada]
+
+
+def gravar_dxf(antena=None, arquivo=None):
+    """Grava a face de cima em DXF R12, em mm, com a origem no canto inferior esquerdo.
+
+    O DXF só tem a geometria. Fresa, profundidade, avanço e compensação do raio da fresa
+    ficam no programa de CAM da máquina. Camadas:
+
+        CONTORNO_PLACA  retângulo da placa
+        COBRE_CIMA      contorno do patch com a linha (o cobre que fica)
+        AREA_REMOVER    placa menos o cobre que fica, num polígono só (a linha
+                        chega à borda, então a área não tem ilha)
+    """
+    a = antena or Antena()
+    dx, dy = a.placa_x / 2, a.placa_y / 2
+    cobre = [(x + dx, y + dy) for x, y in a.poligono()]
+    placa = [(0.0, 0.0), (a.placa_x, 0.0), (a.placa_x, a.placa_y), (0.0, a.placa_y)]
+    # cobre[0] e cobre[-1] são os cantos da linha na borda x = 0 (y de baixo e de cima)
+    remover = placa + list(reversed(cobre))
+
+    g = ["0", "SECTION", "2", "HEADER",
+         "9", "$ACADVER", "1", "AC1009",
+         "9", "$INSUNITS", "70", "4",
+         "9", "$MEASUREMENT", "70", "1",
+         "9", "$EXTMIN", "10", "0.0", "20", "0.0", "30", "0.0",
+         "9", "$EXTMAX", "10", f"{a.placa_x:.4f}", "20", f"{a.placa_y:.4f}", "30", "0.0",
+         "0", "ENDSEC",
+         "0", "SECTION", "2", "TABLES",
+         "0", "TABLE", "2", "LTYPE", "70", "1",
+         "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0",
+         "40", "0.0",
+         "0", "ENDTAB",
+         "0", "TABLE", "2", "LAYER", "70", str(len(CAMADAS_DXF))]
+    for nome, (cor, _) in CAMADAS_DXF.items():
+        g += ["0", "LAYER", "2", nome, "70", "0", "62", str(cor), "6", "CONTINUOUS"]
+    g += ["0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"]
+    g += _polilinha_dxf("CONTORNO_PLACA", placa)
+    g += _polilinha_dxf("COBRE_CIMA", cobre)
+    g += _polilinha_dxf("AREA_REMOVER", remover)
+    g += ["0", "ENDSEC", "0", "EOF"]
+
+    arquivo = Path(arquivo or AQUI / f"{NOME}.dxf")
+    arquivo.write_text("\n".join(g) + "\n", encoding="ascii", newline="\n")
+    return arquivo
+
+
 # ==================================================================== desenho cotado
 
 def desenhar(antena=None, arquivo=None):
@@ -225,7 +286,7 @@ def desenhar(antena=None, arquivo=None):
                 arrowprops=dict(arrowstyle="->", lw=0.8))
 
     ax.plot(a.x_borda, -a.placa_y / 2, "ko", ms=4)
-    ax.annotate("origem do Gerber (0, 0)", (a.x_borda, -a.placa_y / 2), (a.x_borda - 14, -a.placa_y / 2 - 3),
+    ax.annotate("origem do DXF (0, 0)", (a.x_borda, -a.placa_y / 2), (a.x_borda - 14, -a.placa_y / 2 - 3),
                 fontsize=8)
     ax.set_xlim(a.x_borda - 15, -a.x_borda + 10)
     ax.set_ylim(-a.placa_y / 2 - 15, a.placa_y / 2 + 6)
@@ -246,6 +307,7 @@ def desenhar(antena=None, arquivo=None):
 if __name__ == "__main__":
     print("Fórmulas clássicas:", projeto_inicial())
     print("Projeto final:     ", Antena())
+    print("gravado:", gravar_dxf().relative_to(AQUI))
     for caminho in gravar_gerber():
         print("gravado:", caminho.relative_to(AQUI))
     print("gravado:", desenhar().relative_to(AQUI))

@@ -25,10 +25,8 @@ O trabalho tem duas etapas:
 
 | Arquivo | Para que serve |
 |---|---|
-| `patch_2g45_gerber.zip` | os três Gerber num arquivo só, para levar para o computador da CNC |
-| `gerber/patch_2g45-F_Cu.gbr` | cobre de cima: patch e linha (é a única face que vai à fresa) |
-| `gerber/patch_2g45-B_Cu.gbr` | cobre de baixo: plano de terra inteiro (não fresar) |
-| `gerber/patch_2g45-Edge_Cuts.gbr` | contorno da placa, 45 x 32 mm |
+| `patch_2g45.dxf` | **o projeto para a CNC**: face de cima e contorno da placa, em mm |
+| `patch_2g45_gerber.zip`, `gerber/` | o mesmo desenho em Gerber, para quem usa um CAM de placa de circuito (FlatCAM, por exemplo) |
 | `resultados/desenho_cotado.png` | dimensões, para conferir a placa com o paquímetro |
 | `resultados/resumo.md` | tabelas com os resultados esperados das duas etapas |
 | `resultados/s11_ar.s1p` | S11 simulado no ar, em Touchstone, para abrir no programa do VNA |
@@ -37,9 +35,32 @@ O trabalho tem duas etapas:
 | `resultados/s11_ar_variacoes.csv`, `s11_amostra.csv` | todas as curvas simuladas, para planilha |
 | `resultados/*.png` | gráficos dos resultados esperados |
 | `comparar.py` | compara as suas medições (`.s1p`) com a simulação e estima a água |
-| `geometria.py`, `simular.py` | geram o Gerber e refazem a simulação |
+| `geometria.py`, `simular.py` | geram o DXF e o Gerber e refazem a simulação |
 
 Não há arquivo de furação: o SMA de borda não precisa de furo.
+
+### O arquivo DXF
+
+O DXF tem só a geometria. A fresa, a profundidade, o avanço e a compensação do raio da fresa
+são ajustes da sua máquina e ficam no programa de CAM.
+
+- Formato DXF R12, que abre em qualquer programa de CAD ou CAM (AutoCAD, LibreCAD, Fusion,
+  Aspire, CamBam, Inkscape). Para ter um DWG, abra o DXF no AutoCAD e salve como DWG.
+- Unidade: milímetro. Origem (0, 0): canto inferior esquerdo da placa.
+- Vista de cima da face de cima. Não espelhe o desenho.
+- Todas as linhas são polilinhas fechadas, em três camadas:
+
+| Camada | Cor | O que é |
+|---|---|---|
+| `CONTORNO_PLACA` | branca ou preta (cor 7) | retângulo da placa, 45 x 32 mm (corte final) |
+| `COBRE_CIMA` | vermelha | contorno do patch com a linha: o cobre que **fica** |
+| `AREA_REMOVER` | azul | placa menos patch e linha: o cobre que **sai**, num polígono só |
+
+As camadas `COBRE_CIMA` e `AREA_REMOVER` têm linhas em comum. Use uma ou a outra, conforme o
+seu programa de CAM:
+
+- para um rebaixo (*pocket*) com a área que sai, use `AREA_REMOVER`;
+- para um desbaste em volta de ilhas, use `CONTORNO_PLACA` como limite e `COBRE_CIMA` como ilha.
 
 ## Material
 
@@ -56,16 +77,19 @@ Não há arquivo de furação: o SMA de borda não precisa de furo.
 
 ### Fabricação na CNC
 
-1. Abra `patch_2g45-F_Cu.gbr` e `patch_2g45-Edge_Cuts.gbr` no programa de CAM (FlatCAM, por
-   exemplo). As unidades são milímetros e a origem é o canto inferior esquerdo da placa.
+1. Importe `patch_2g45.dxf` no programa de CAM da máquina. Confira se a placa tem 45 x 32 mm
+   (unidade em milímetro) e se a origem está no canto inferior esquerdo.
 2. Prenda a placa com a face de baixo para a mesa. A face de baixo é o plano de terra e
    fica intacta.
 3. Remova **todo** o cobre de cima que fica fora do patch e da linha.
    - Não faça só o contorno (isolação). Cobre solto perto do patch muda a ressonância.
-   - No FlatCAM, use a remoção de área sem cobre (*non-copper clearing*).
+   - Faça um rebaixo na camada `AREA_REMOVER`, com a fresa por dentro da área. Assim, a
+     fresa não entra no patch nem na linha.
+   - Para fazer o contorno fino com a fresa em V e o resto com a fresa de topo, use a fresa
+     em V ao longo de `COBRE_CIMA`, por fora do cobre, e depois a de topo no rebaixo.
 4. Use a menor profundidade que corta o cobre (de 0,05 a 0,1 mm). Não chegue ao plano de terra.
-5. Corte o contorno da placa por último. A borda do lado do SMA tem de ficar reta, e a
-   linha tem de chegar até a borda.
+5. Corte o contorno da placa (`CONTORNO_PLACA`) por último, com a fresa por fora da linha.
+   A borda do lado do SMA tem de ficar reta, e a linha tem de chegar até a borda.
 6. Lixe as rebarbas de leve e limpe a placa.
 7. Meça com o paquímetro e anote: L, W, largura da linha, folga do inset, profundidade do
    inset e espessura da placa. Compare com o desenho cotado.
@@ -218,10 +242,10 @@ Copie esta pasta para `Documentos/openEMS-notebooks`. No JupyterLab do openEMS L
 terminal (File > New > Terminal), entre na pasta com `cd patch_2g45` e rode:
 
 ```bash
-python geometria.py      # Gerber e desenho cotado (alguns segundos)
+python geometria.py      # DXF, Gerber e desenho cotado (alguns segundos)
 python simular.py        # 12 simulações e gráficos (de 30 a 90 minutos)
 ```
 
 Para mudar o sensor, mude os valores da classe `Antena` em `geometria.py`. Para mudar a
-amostra (espessura, er, gap), mude a classe `Amostra` em `simular.py`. A simulação e o Gerber
-usam o mesmo polígono, então os dois ficam sempre iguais.
+amostra (espessura, er, gap), mude a classe `Amostra` em `simular.py`. A simulação, o DXF e o
+Gerber usam o mesmo polígono, então os três ficam sempre iguais.
