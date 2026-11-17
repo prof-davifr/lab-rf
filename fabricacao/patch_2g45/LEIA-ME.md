@@ -25,8 +25,10 @@ O trabalho tem duas etapas:
 
 | Arquivo | Para que serve |
 |---|---|
-| `patch_2g45.dxf` | **o projeto para a CNC**: face de cima e contorno da placa, em mm |
-| `patch_2g45_gerber.zip`, `gerber/` | o mesmo desenho em Gerber, para quem usa um CAM de placa de circuito (FlatCAM, por exemplo) |
+| `gerber/patch_2g45-F_Cu.gbr`, `gerber/patch_2g45-Edge_Cuts.gbr` | **os arquivos para o FlatCAM**: cobre de cima e contorno da placa (veja o [guia da CNC](../GUIA_CNC.md)) |
+| `gerber/patch_2g45-B_Cu.gbr` | cobre de baixo: plano de terra inteiro (não vai à fresa) |
+| `patch_2g45_gerber.zip` | os três Gerber num arquivo só |
+| `patch_2g45.dxf` | o mesmo desenho em DXF, para conferir e cotar no LibreCAD ou usar em outro CAM |
 | `resultados/desenho_cotado.png` | dimensões, para conferir a placa com o paquímetro |
 | `resultados/resumo.md` | tabelas com os resultados esperados das duas etapas |
 | `resultados/s11_ar.s1p` | S11 simulado no ar, em Touchstone, para abrir no programa do VNA |
@@ -44,8 +46,13 @@ Não há arquivo de furação: o SMA de borda não precisa de furo.
 O DXF tem só a geometria. A fresa, a profundidade, o avanço e a compensação do raio da fresa
 são ajustes da sua máquina e ficam no programa de CAM.
 
-- Formato DXF R12, que abre em qualquer programa de CAD ou CAM (AutoCAD, LibreCAD, Fusion,
-  Aspire, CamBam, Inkscape). Para ter um DWG, abra o DXF no AutoCAD e salve como DWG.
+No FlatCAM, use o Gerber e não o DXF. O FlatCAM lê as polilinhas do DXF como linhas, e não
+como áreas; o [guia da CNC](../GUIA_CNC.md#por-que-o-flatcam-recebe-o-gerber-e-não-o-dxf)
+explica o problema.
+
+- Formato DXF R12, que abre em qualquer programa de CAD ou CAM (LibreCAD, FreeCAD, Inkscape,
+  bCNC e outros). O LibreCAD abre DWG, mas grava só DXF. Os programas que leem DWG também
+  leem este DXF.
 - Unidade: milímetro. Origem (0, 0): canto inferior esquerdo da placa.
 - Vista de cima da face de cima. Não espelhe o desenho.
 - Todas as linhas são polilinhas fechadas, em três camadas:
@@ -64,10 +71,11 @@ seu programa de CAM:
 
 ## Material
 
-- Placa de FR-4 de face dupla, 1,6 mm, cobre de 35 µm (1 oz), com pelo menos 45 x 32 mm.
+- Placa de FR-4 de face dupla, 1,6 mm, cobre de 35 µm (1 oz), com pelo menos 60 x 45 mm.
+  A margem em volta da antena segura a placa durante o recorte.
 - Um conector SMA fêmea de borda (*end launch*) para placa de 1,6 mm.
-- Fresas: uma em V (ou de 0,2 a 0,4 mm) para o contorno do cobre, uma de topo de 1 a 2 mm
-  para remover o cobre e uma de 1 a 2 mm para cortar a placa.
+- Fresas: uma em V de 30° com ponta de 0,1 mm, uma de topo de 0,8 mm e uma de 1,5 a 2 mm
+  para o recorte (veja o [guia da CNC](../GUIA_CNC.md)).
 - Quatro espaçadores de plástico de 3 mm (arruelas de náilon, por exemplo).
 - Amostras: chapas de metal com 10 mm de revestimento de polímero, de pelo menos
   100 x 80 mm. Uma fica seca, como referência.
@@ -77,22 +85,19 @@ seu programa de CAM:
 
 ### Fabricação na CNC
 
-1. Importe `patch_2g45.dxf` no programa de CAM da máquina. Confira se a placa tem 45 x 32 mm
-   (unidade em milímetro) e se a origem está no canto inferior esquerdo.
-2. Prenda a placa com a face de baixo para a mesa. A face de baixo é o plano de terra e
-   fica intacta.
-3. Remova **todo** o cobre de cima que fica fora do patch e da linha.
-   - Não faça só o contorno (isolação). Cobre solto perto do patch muda a ressonância.
-   - Faça um rebaixo na camada `AREA_REMOVER`, com a fresa por dentro da área. Assim, a
-     fresa não entra no patch nem na linha.
-   - Para fazer o contorno fino com a fresa em V e o resto com a fresa de topo, use a fresa
-     em V ao longo de `COBRE_CIMA`, por fora do cobre, e depois a de topo no rebaixo.
-4. Use a menor profundidade que corta o cobre (de 0,05 a 0,1 mm). Não chegue ao plano de terra.
-5. Corte o contorno da placa (`CONTORNO_PLACA`) por último, com a fresa por fora da linha.
-   A borda do lado do SMA tem de ficar reta, e a linha tem de chegar até a borda.
-6. Lixe as rebarbas de leve e limpe a placa.
-7. Meça com o paquímetro e anote: L, W, largura da linha, folga do inset, profundidade do
-   inset e espessura da placa. Compare com o desenho cotado.
+Siga o [guia da fresadora CNC](../GUIA_CNC.md). Ele usa este sensor como exemplo, com os
+arquivos `gerber/patch_2g45-F_Cu.gbr` e `gerber/patch_2g45-Edge_Cuts.gbr`.
+
+Para esta antena, preste atenção a três pontos:
+
+- Remova **todo** o cobre de cima que fica fora do patch e da linha, inclusive dentro das
+  fendas do inset. Cobre solto perto do patch muda a ressonância.
+- Não frese a face de baixo. Ela é o plano de terra.
+- Não ponha ponte na borda do SMA. Esta borda tem de ficar reta, e a linha tem de chegar
+  até ela.
+
+Depois da fabricação, meça com o paquímetro e anote: L, W, largura da linha, folga do
+inset, profundidade do inset e espessura da placa. Compare com o desenho cotado.
 
 A fresa em V corta mais largo quando desce mais. Se a folga do inset medir mais que 1,2 mm,
 diminua a profundidade de corte na próxima placa.
