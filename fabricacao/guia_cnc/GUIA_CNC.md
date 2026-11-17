@@ -89,23 +89,91 @@ Todos os programas abaixo são livres e de código aberto.
 | [LibreCAD](https://librecad.org) | GPL-2.0 | abre e edita DXF; abre DWG | não |
 | [KiCad](https://www.kicad.org) | GPL-3.0 | desenha antenas novas e grava o Gerber | não |
 
-### Instalação
+### Instalação no Linux (Mint 22 ou Ubuntu 24.04)
 
-**FlatCAM.** No Windows, baixe o instalador em <http://flatcam.org/download>. No Linux, siga as
-instruções de instalação a partir do código-fonte, no mesmo site.
+Abra um terminal, cole o comando abaixo e tecle Enter. Ele instala todos os programas da
+tabela e pede a senha do computador quando precisar.
 
-**bCNC.** O bCNC é um programa em Python.
+```bash
+URL=https://raw.githubusercontent.com/prof-davifr/openEMS-lab/main
+curl -fsSL $URL/fabricacao/guia_cnc/instalar_linux.sh | bash
+```
 
-- No Windows:
-  1. Instale o Python 3 de <https://www.python.org>. Na primeira tela, marque
-     **Add python.exe to PATH**.
-  2. Abra o Prompt de Comando e rode `pip install bCNC`.
-  3. Para abrir o bCNC, rode `python -m bCNC`.
-- No Linux Mint:
-  1. Rode `sudo apt install python3-tk pipx` e depois `pipx install bCNC`.
-  2. Para dar acesso à porta USB, rode `sudo usermod -aG dialout $USER`. Depois, saia da
-     sessão e entre de novo.
-  3. Para abrir o bCNC, rode `bCNC`.
+Espere a mensagem **INSTALACAO OK**. Depois, saia da sessão e entre de novo, para o bCNC ter
+acesso à porta USB. Os programas ficam no menu de aplicativos. No terminal, os comandos são
+`flatcam`, `bCNC`, `librecad`, `kicad` e `camotics`.
+
+O script [instalar_linux.sh](instalar_linux.sh) roda os comandos abaixo. Para instalar à mão,
+rode os mesmos comandos, na mesma ordem.
+
+**1. Pacotes do sistema, com o LibreCAD e o KiCad:**
+
+```bash
+sudo apt update
+sudo apt install -y git curl python3-tk pipx librecad kicad \
+    libgl1 libegl1 libxkbcommon-x11-0 libxcb-xinerama0 libxcb-cursor0 \
+    libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+    libxcb-render-util0 libxcb-shape0 libxcb-xkb1
+```
+
+**2. Acesso à porta USB da CNC.** Depois deste comando, saia da sessão e entre de novo.
+
+```bash
+sudo usermod -aG dialout $USER
+```
+
+**3. bCNC:**
+
+```bash
+pipx ensurepath
+pipx install bCNC
+```
+
+**4. FlatCAM.** O FlatCAM não tem pacote para Linux. O código-fonte é de 2022 e precisa do
+Python 3.10 e de versões antigas das bibliotecas. O `uv` instala um Python 3.10 só para o
+FlatCAM, sem mexer no Python do sistema.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+D=~/.local/share/flatcam-beta
+git clone --depth 1 -b Beta https://bitbucket.org/jpcgt/flatcam.git $D/fonte
+uv venv -p 3.10 $D/venv
+VIRTUAL_ENV=$D/venv uv pip install \
+    pyqt5 "numpy<1.24" "matplotlib<3.7" "shapely==1.8.5.post1" \
+    "vispy==0.9.6" rtree pyopengl "ortools<9.5" "svg.path<6" simplejson \
+    freetype-py fontTools rasterio lxml "ezdxf<1.0" qrcode "reportlab<4" \
+    "svglib<1.5" dill pyserial "Pillow<10"
+```
+
+Para abrir o FlatCAM instalado à mão:
+
+```bash
+cd ~/.local/share/flatcam-beta/fonte && ../venv/bin/python FlatCAM.py
+```
+
+**5. CAMotics (opcional).** O CAMotics só tem um pacote feito para o Debian. Se ele não
+instalar, confira o G-code na vista do CNCJob do FlatCAM e no bCNC.
+
+```bash
+C=https://camotics.org/builds/release/debian-stable-64bit
+cd /tmp
+curl -fLO $C/camotics_1.2.0_amd64.deb
+sudo apt install -y ./camotics_1.2.0_amd64.deb
+```
+
+### Instalação no Windows
+
+**FlatCAM.** Baixe o instalador em <http://flatcam.org/download> e instale.
+
+**bCNC.**
+
+1. Instale o Python 3 de <https://www.python.org>. Na primeira tela, marque
+   **Add python.exe to PATH**.
+2. Abra o Prompt de Comando e rode `pip install bCNC`.
+3. Para abrir o bCNC, rode `python -m bCNC`.
+
+**LibreCAD, KiCad e CAMotics.** Baixe o instalador de cada um nas páginas da tabela acima.
 
 ### Por que o FlatCAM recebe o Gerber, e não o DXF
 

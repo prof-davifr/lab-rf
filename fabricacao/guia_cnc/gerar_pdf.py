@@ -58,7 +58,8 @@ p, li { orphans: 3; widows: 3; }
 a { color: #1f5fa8; text-decoration: none; }
 code { font-family: "DejaVu Sans Mono", monospace; font-size: 8.8pt; background: #f2f2f2;
        padding: 0 1pt; }
-pre { background: #f2f2f2; padding: 3mm; font-size: 8.8pt; break-inside: avoid; }
+pre { background: #f2f2f2; padding: 3mm; font-size: 8.3pt; break-inside: avoid;
+      white-space: pre-wrap; overflow-wrap: anywhere; }
 pre code { background: none; }
 table { border-collapse: collapse; width: 100%; margin: 3mm 0 4mm 0; font-size: 8.8pt;
         break-inside: auto; }
