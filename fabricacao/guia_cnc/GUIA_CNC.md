@@ -4,7 +4,7 @@ Este guia mostra como fresar uma antena em FR-4 na fresadora CNC do laboratório
 arquivo da antena até a placa pronta para soldar o conector. Ele usa só programas livres
 e de código aberto, que rodam no Windows e no Linux.
 
-O exemplo do guia é o sensor patch de [patch_2g45](patch_2g45). Para outra antena, troque
+O exemplo do guia é o sensor patch de [patch_2g45](../patch_2g45). Para outra antena, troque
 os arquivos e mantenha os passos.
 
 Este guia substitui o guia anterior do laboratório. As mudanças principais são:
@@ -177,6 +177,8 @@ inversor, ou mude `$30` e `$31` para os limites reais do inversor.
 A ponta de prova usa duas garras: uma na fresa e outra no cobre da placa. Quando a fresa
 toca o cobre, o circuito fecha, e o GRBL para o eixo Z.
 
+![Ligação da ponta de prova: uma garra na fresa e outra no cobre](img/ponta_de_prova.png)
+
 **Desligue o spindle antes de pôr a garra na fresa.**
 
 1. Ligue a garra de prova à entrada *probe* da controladora. Ligue a garra de terra ao GND
@@ -216,6 +218,8 @@ O resultado desta seção são quatro arquivos de G-code, cada um com uma fresa 
 Grave sempre uma fresa por arquivo. Com o pós-processador deste guia, o G-code não para
 para a troca de fresa. Um arquivo com duas fresas continua o corte com a fresa errada.
 
+![O que cada arquivo de G-code corta no sensor (ilustração simplificada)](img/caminhos.png)
+
 A remoção de todo o cobre é necessária em antenas. Uma ilha de cobre solta perto do patch
 muda a ressonância.
 
@@ -238,6 +242,8 @@ A fresa em V corta mais largo quando desce mais:
     largura do corte = ponta + 2 × profundidade × tan(ângulo / 2)
 
 Com a ponta de 0,1 mm, o ângulo de 30° e a profundidade de 0,08 mm, a largura é 0,14 mm.
+
+![A largura do corte da fresa em V depende da profundidade](img/fresa_v.png)
 
 1. Selecione o objeto `F_Cu` e abra **Tools > Isolation Tool**.
 2. Na tabela de ferramentas, escolha o tipo **V** e preencha a ponta (0,1 mm), o ângulo (30°)
@@ -339,6 +345,8 @@ acionado sem querer. Depois do `$X`, faça o home de novo.
 
 ### 7.2 Definir a origem em X e Y
 
+![Posição da antena na placa de FR-4, com a origem, o ponto de prova e as pontes](img/placa_na_mesa.png)
+
 1. Ponha a fresa em V no spindle.
 2. Mova a fresa para o ponto que vai ser o canto inferior esquerdo da antena, 5 mm para
    dentro de cada borda da placa de FR-4.
@@ -365,6 +373,7 @@ então o ponto funciona em todas as trocas de fresa.
    - O primeiro desce a fresa a 20 mm/min até o toque.
    - O segundo define Z = 0 no ponto do toque.
    - O terceiro sobe a fresa para 2 mm.
+
 4. Deixe as garras ligadas para o mapa de altura.
 
 Se a fresa descer 5 mm sem tocar, o GRBL para com o alarme `ALARM:5`. Confira as garras e
@@ -380,6 +389,8 @@ corta fundo num lado e não corta o cobre no outro.
 
 O bCNC mede a altura da placa em vários pontos com a ponta de prova. Depois, ele corrige o Z
 do G-code durante o envio.
+
+![Exemplo de mapa de altura com 6 x 5 pontos sobre a área do recorte](img/mapa_altura.png)
 
 1. Abra `3_recorte.nc` no bCNC (**File > Open**). O recorte é o arquivo que cobre a maior
    área, então o mapa fica válido para todos os arquivos.

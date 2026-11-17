@@ -67,7 +67,7 @@ A pasta [fabricacao/patch_2g45](fabricacao/patch_2g45) tem um sensor patch peque
 medição, resultados simulados no ar e sobre um revestimento de polímero com 0 a 10 % de
 água, e um script que compara a medição com a simulação e estima a umidade.
 
-O [guia da fresadora CNC](fabricacao/GUIA_CNC.md) mostra como fresar antenas em placa de
+O [guia da fresadora CNC](fabricacao/guia_cnc/GUIA_CNC.md) mostra como fresar antenas em placa de
 circuito na CNC do laboratório, só com programas livres (FlatCAM e bCNC).
 
 ## Onde ficam as coisas

@@ -25,7 +25,7 @@ O trabalho tem duas etapas:
 
 | Arquivo | Para que serve |
 |---|---|
-| `gerber/patch_2g45-F_Cu.gbr`, `gerber/patch_2g45-Edge_Cuts.gbr` | **os arquivos para o FlatCAM**: cobre de cima e contorno da placa (veja o [guia da CNC](../GUIA_CNC.md)) |
+| `gerber/patch_2g45-F_Cu.gbr`, `gerber/patch_2g45-Edge_Cuts.gbr` | **os arquivos para o FlatCAM**: cobre de cima e contorno da placa (veja o [guia da CNC](../guia_cnc/GUIA_CNC.md)) |
 | `gerber/patch_2g45-B_Cu.gbr` | cobre de baixo: plano de terra inteiro (não vai à fresa) |
 | `patch_2g45_gerber.zip` | os três Gerber num arquivo só |
 | `patch_2g45.dxf` | o mesmo desenho em DXF, para conferir e cotar no LibreCAD ou usar em outro CAM |
@@ -47,7 +47,7 @@ O DXF tem só a geometria. A fresa, a profundidade, o avanço e a compensação 
 são ajustes da sua máquina e ficam no programa de CAM.
 
 No FlatCAM, use o Gerber e não o DXF. O FlatCAM lê as polilinhas do DXF como linhas, e não
-como áreas; o [guia da CNC](../GUIA_CNC.md#por-que-o-flatcam-recebe-o-gerber-e-não-o-dxf)
+como áreas; o [guia da CNC](../guia_cnc/GUIA_CNC.md#por-que-o-flatcam-recebe-o-gerber-e-não-o-dxf)
 explica o problema.
 
 - Formato DXF R12, que abre em qualquer programa de CAD ou CAM (LibreCAD, FreeCAD, Inkscape,
@@ -75,7 +75,7 @@ seu programa de CAM:
   A margem em volta da antena segura a placa durante o recorte.
 - Um conector SMA fêmea de borda (*end launch*) para placa de 1,6 mm.
 - Fresas: uma em V de 30° com ponta de 0,1 mm, uma de topo de 0,8 mm e uma de 1,5 a 2 mm
-  para o recorte (veja o [guia da CNC](../GUIA_CNC.md)).
+  para o recorte (veja o [guia da CNC](../guia_cnc/GUIA_CNC.md)).
 - Quatro espaçadores de plástico de 3 mm (arruelas de náilon, por exemplo).
 - Amostras: chapas de metal com 10 mm de revestimento de polímero, de pelo menos
   100 x 80 mm. Uma fica seca, como referência.
@@ -85,7 +85,7 @@ seu programa de CAM:
 
 ### Fabricação na CNC
 
-Siga o [guia da fresadora CNC](../GUIA_CNC.md). Ele usa este sensor como exemplo, com os
+Siga o [guia da fresadora CNC](../guia_cnc/GUIA_CNC.md). Ele usa este sensor como exemplo, com os
 arquivos `gerber/patch_2g45-F_Cu.gbr` e `gerber/patch_2g45-Edge_Cuts.gbr`.
 
 Para esta antena, preste atenção a três pontos:
