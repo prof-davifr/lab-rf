@@ -1,0 +1,15 @@
+%TF.GenerationSoftware,openEMS-lab,patch_2g45,1.0*%
+%TF.FileFunction,Copper,L2,Bot*%
+%TF.FilePolarity,Positive*%
+%FSLAX46Y46*%
+%MOMM*%
+%LPD*%
+G01*
+G36*
+X0Y0D02*
+X70000000Y0D01*
+X70000000Y70000000D01*
+X0Y70000000D01*
+X0Y0D01*
+G37*
+M02*

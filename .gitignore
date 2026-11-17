@@ -6,3 +6,5 @@ build/
 *.csv
 !docs/**/*.png
 openEMS-lab-windows.zip*
+!fabricacao/**/*.png
+!fabricacao/**/*.csv
