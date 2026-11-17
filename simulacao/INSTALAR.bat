@@ -4,15 +4,15 @@ rem
 rem - Com internet: baixa o pacote do ultimo release no GitHub.
 rem - Sem internet: coloque openEMS-lab-windows.zip na mesma pasta deste arquivo.
 rem
-rem Instala em %LOCALAPPDATA%\openEMS-lab. Os notebooks do aluno ficam em
-rem Documentos\openEMS-notebooks e nunca sao apagados por este instalador.
+rem Instala em %LOCALAPPDATA%\openEMS-lab. Os notebooks e os projetos do aluno ficam
+rem em Documentos\openEMS-notebooks e nunca sao apagados por este instalador.
 rem A variavel EMSLAB_TESTE=1 tira as perguntas (teste automatico).
 
 setlocal EnableExtensions
 title Instalador do openEMS Lab
 cd /d "%~dp0"
 
-set "REPO=prof-davifr/openEMS-lab"
+set "REPO=prof-davifr/lab-rf"
 set "PACOTE=openEMS-lab-windows.zip"
 set "URL=https://github.com/%REPO%/releases/latest/download/%PACOTE%"
 set "DESTINO=%LOCALAPPDATA%\openEMS-lab"

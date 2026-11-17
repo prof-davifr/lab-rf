@@ -3,8 +3,8 @@
 # FlatCAM, bCNC, LibreCAD, KiCad e, se der certo, CAMotics.
 #
 # Uso:
-#   URL=https://raw.githubusercontent.com/prof-davifr/openEMS-lab/main
-#   curl -fsSL $URL/fabricacao/guia_cnc/instalar_linux.sh | bash
+#   URL=https://raw.githubusercontent.com/prof-davifr/lab-rf/main
+#   curl -fsSL $URL/fabricacao/instalar_linux.sh | bash
 #
 # Pode rodar de novo: o script atualiza o que já está instalado.
 

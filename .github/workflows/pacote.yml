@@ -2,7 +2,7 @@ name: Pacote
 
 # Windows: monta o pacote portátil (Python + openEMS + Jupyter + notebooks) e
 # testa num Windows real a partir de uma pasta com espaço e acento.
-# Linux: roda o instalar.sh num Linux Mint limpo, como um usuário comum.
+# Linux: roda o simulacao/instalar.sh num Linux Mint limpo, como um usuário comum.
 # Numa tag v*, publica o release com os instaladores dos dois sistemas.
 
 on:
@@ -61,21 +61,22 @@ jobs:
           $py = "build/openEMS-lab/python/python.exe"
           $rodas = Get-ChildItem build/openEMS-lab/openEMS/python/*-cp313-*.whl | ForEach-Object FullName
           uv pip install --python $py --link-mode copy $rodas numpy scipy matplotlib h5py jupyterlab ipykernel scikit-rf
-          uv pip install --python $py --link-mode copy ./emslab
+          uv pip install --python $py --link-mode copy ./simulacao/emslab
           # avisos e notícias do JupyterLab confundem quem está começando
           $config = "build/openEMS-lab/python/share/jupyter/lab/settings"
           New-Item -ItemType Directory -Force $config | Out-Null
-          Copy-Item pacote/overrides.json $config/
+          Copy-Item simulacao/pacote/overrides.json $config/
           uv pip list --python $py
 
       - name: Montar o pacote
         run: |
           $raiz = "build/openEMS-lab"
-          Copy-Item pacote/ABRIR.bat, pacote/VERIFICAR.bat $raiz/
-          Copy-Item -Recurse pacote/scripts $raiz/scripts
-          Copy-Item -Recurse notebooks $raiz/notebooks
-          Copy-Item -Recurse emslab/src/emslab $raiz/codigo-emslab
-          Copy-Item docs/LEIA-ME.txt, LICENSE $raiz/
+          Copy-Item simulacao/pacote/ABRIR.bat, simulacao/pacote/VERIFICAR.bat $raiz/
+          Copy-Item -Recurse simulacao/pacote/scripts $raiz/scripts
+          Copy-Item -Recurse simulacao/notebooks $raiz/notebooks
+          Copy-Item -Recurse projetos $raiz/projetos
+          Copy-Item -Recurse simulacao/emslab/src/emslab $raiz/codigo-emslab
+          Copy-Item simulacao/pacote/LEIA-ME.txt, LICENSE $raiz/
           Invoke-WebRequest -Uri https://raw.githubusercontent.com/thliebig/openEMS/master/COPYING -OutFile $raiz/openEMS/LICENCA-openEMS.txt
           Invoke-WebRequest -Uri https://raw.githubusercontent.com/thliebig/CSXCAD/master/COPYING -OutFile $raiz/openEMS/LICENCA-CSXCAD.txt
           $versao = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev-$($env:GITHUB_SHA.Substring(0, 7))" }
@@ -103,12 +104,15 @@ jobs:
           $env:USERPROFILE = "C:\Users\Aluno Ção"
           $env:LOCALAPPDATA = "$env:USERPROFILE\AppData\Local"
           New-Item -ItemType Directory -Force $env:LOCALAPPDATA, instalador | Out-Null
-          Copy-Item INSTALAR.bat, $env:PACOTE, "$env:PACOTE.sha256" instalador/
+          Copy-Item simulacao/INSTALAR.bat, $env:PACOTE, "$env:PACOTE.sha256" instalador/
           cmd /c instalador\INSTALAR.bat
           $codigo = $LASTEXITCODE
           Get-Content "$env:LOCALAPPDATA\openEMS-lab-instalacao.log"
           if ($codigo -ne 0) { throw "INSTALAR.bat falhou (código $codigo)" }
           if (-not (Test-Path "$env:USERPROFILE\Desktop\openEMS Lab.lnk")) { throw "O atalho não foi criado" }
+          if (-not (Test-Path "$env:USERPROFILE\Documents\openEMS-notebooks\projetos\patch_2g45\simular.py")) { throw "Os projetos não foram copiados" }
+          # o artefato leva o instalador na raiz, ao lado do ZIP
+          Copy-Item simulacao/INSTALAR.bat .
 
       - name: Rodar os notebooks no pacote instalado
         env:
@@ -161,8 +165,9 @@ jobs:
       - name: Instalar como o aluno
         run: |
           sudo -u aluno -H env EMSLAB_TESTE=1 EMSLAB_SEM_JANELA=1 MPLBACKEND=Agg \
-            bash /home/aluno/openEMS-lab/instalar.sh
+            bash /home/aluno/openEMS-lab/simulacao/instalar.sh
           test -f /home/aluno/.local/share/applications/openems-lab.desktop
+          ls /home/aluno/*/openEMS-notebooks/projetos/patch_2g45/simular.py
 
       - name: Rodar os notebooks no pacote instalado
         run: |
@@ -188,8 +193,8 @@ jobs:
 
       - name: Fixar a versão no instalar.sh
         run: |
-          sed -i "s/^LAB_VERSAO=\"main\"/LAB_VERSAO=\"$GITHUB_REF_NAME\"/" instalar.sh
-          grep -q "^LAB_VERSAO=\"$GITHUB_REF_NAME\"" instalar.sh
+          sed -i "s/^LAB_VERSAO=\"main\"/LAB_VERSAO=\"$GITHUB_REF_NAME\"/" simulacao/instalar.sh
+          grep -q "^LAB_VERSAO=\"$GITHUB_REF_NAME\"" simulacao/instalar.sh
 
       - name: Publicar release
         uses: softprops/action-gh-release@v3
@@ -198,7 +203,7 @@ jobs:
             windows/${{ env.PACOTE }}
             windows/${{ env.PACOTE }}.sha256
             windows/INSTALAR.bat
-            instalar.sh
+            simulacao/instalar.sh
           body: |
             openEMS Lab: openEMS, Python, JupyterLab e os notebooks do curso.
 

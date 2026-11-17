@@ -2,13 +2,13 @@
 # Instalador do openEMS Lab para Linux (openEMS + Python + Jupyter + notebooks).
 #
 # Num terminal:
-#   curl -fsSL https://github.com/prof-davifr/openEMS-lab/releases/latest/download/instalar.sh | bash
+#   curl -fsSL https://github.com/prof-davifr/lab-rf/releases/latest/download/instalar.sh | bash
 #
 # - Pede a senha uma vez, para instalar os pacotes de compilação do sistema.
 # - Compila o openEMS a partir do código oficial (de 10 a 30 minutos).
 # - Instala tudo em ~/.local/share/openEMS-lab, sem mexer no Python do sistema.
-# - Os notebooks do aluno ficam em ~/Documentos/openEMS-notebooks e nunca são
-#   apagados por este instalador.
+# - Os notebooks e os projetos do aluno ficam em ~/Documentos/openEMS-notebooks e
+#   nunca são apagados por este instalador.
 #
 # Feito para o Linux Mint e o Ubuntu. Os pacotes do sistema vêm do
 # scripts/install_deps.sh do openEMS, que também conhece Debian, Fedora e Arch.
@@ -17,7 +17,7 @@
 set -euo pipefail
 
 OPENEMS_TAG="v0.37.0"
-REPO="prof-davifr/openEMS-lab"
+REPO="prof-davifr/lab-rf"
 LAB_VERSAO="main"   # o fluxo do GitHub troca pela tag do release
 
 DADOS="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -143,12 +143,13 @@ main() {
         https://github.com/thliebig/openEMS-Project.git "$fonte" < /dev/null \
         || erro "Não foi possível baixar o openEMS. Confira a internet e rode o instalador de novo."
 
-    # rodando de dentro do repositório, usa os arquivos dele; senão, baixa a versão do release
+    # rodando de dentro do repositório (simulacao/instalar.sh), usa os arquivos dele;
+    # senão, baixa a versão do release
     local aqui="${BASH_SOURCE[0]:-}"
     if [[ -n "$aqui" && -f "$(dirname "$aqui")/emslab/pyproject.toml" ]]; then
-        lab="$(cd "$(dirname "$aqui")" && pwd)"
+        lab="$(cd "$(dirname "$aqui")/.." && pwd)"
     else
-        lab="$TRABALHO/openEMS-lab"
+        lab="$TRABALHO/lab-rf"
         rm -rf "$lab"
         git -c advice.detachedHead=false clone -q --depth 1 --branch "$LAB_VERSAO" "https://github.com/$REPO.git" "$lab" < /dev/null \
             || erro "Não foi possível baixar o openEMS Lab. Confira a internet e rode o instalador de novo."
@@ -175,18 +176,19 @@ main() {
     titulo "[4/5] Instalando o Jupyter e as bibliotecas Python..."
     local py="$DESTINO/venv/bin/python"
     "$py" -m pip install -q --upgrade pip < /dev/null
-    "$py" -m pip install -q numpy scipy matplotlib h5py jupyterlab ipykernel scikit-rf "$lab/emslab" < /dev/null \
+    "$py" -m pip install -q numpy scipy matplotlib h5py jupyterlab ipykernel scikit-rf "$lab/simulacao/emslab" < /dev/null \
         || erro "Não foi possível instalar as bibliotecas Python."
     # avisos e notícias do JupyterLab confundem quem está começando
     mkdir -p "$DESTINO/venv/share/jupyter/lab/settings"
-    cp "$lab/pacote/overrides.json" "$DESTINO/venv/share/jupyter/lab/settings/"
+    cp "$lab/simulacao/pacote/overrides.json" "$DESTINO/venv/share/jupyter/lab/settings/"
 
-    cp "$lab/pacote/abrir.sh" "$lab/pacote/verificar.sh" "$DESTINO/"
+    cp "$lab/simulacao/pacote/abrir.sh" "$lab/simulacao/pacote/verificar.sh" "$DESTINO/"
     mkdir -p "$DESTINO/scripts"
-    cp "$lab/pacote/scripts/abrir.py" "$lab/pacote/scripts/ambiente.sh" "$DESTINO/scripts/"
+    cp "$lab/simulacao/pacote/scripts/abrir.py" "$lab/simulacao/pacote/scripts/ambiente.sh" "$DESTINO/scripts/"
     chmod +x "$DESTINO/abrir.sh" "$DESTINO/verificar.sh"
-    cp -r "$lab/notebooks" "$DESTINO/notebooks"
-    cp -r "$lab/emslab/src/emslab" "$DESTINO/codigo-emslab"
+    cp -r "$lab/simulacao/notebooks" "$DESTINO/notebooks"
+    cp -r "$lab/projetos" "$DESTINO/projetos"
+    cp -r "$lab/simulacao/emslab/src/emslab" "$DESTINO/codigo-emslab"
     cp "$lab/LICENSE" "$DESTINO/"
     printf 'pacote %s\nopenEMS %s\n%s\n' "$LAB_VERSAO" "$OPENEMS_TAG" "$("$py" --version)" > "$DESTINO/versao.txt"
 

@@ -25,7 +25,7 @@ O trabalho tem duas etapas:
 
 | Arquivo | Para que serve |
 |---|---|
-| `gerber/patch_2g45-F_Cu.gbr`, `gerber/patch_2g45-Edge_Cuts.gbr` | **os arquivos para o FlatCAM**: cobre de cima e contorno da placa (veja o [guia da CNC](../guia_cnc/GUIA_CNC.md)) |
+| `gerber/patch_2g45-F_Cu.gbr`, `gerber/patch_2g45-Edge_Cuts.gbr` | **os arquivos para o FlatCAM**: cobre de cima e contorno da placa (veja o [guia da CNC](https://github.com/prof-davifr/lab-rf/blob/main/fabricacao/GUIA_CNC.md)) |
 | `gerber/patch_2g45-B_Cu.gbr` | cobre de baixo: plano de terra inteiro (não vai à fresa) |
 | `patch_2g45_gerber.zip` | os três Gerber num arquivo só |
 | `patch_2g45.dxf` | o mesmo desenho em DXF, para conferir e cotar no LibreCAD ou usar em outro CAM |
@@ -47,7 +47,7 @@ O DXF tem só a geometria. A fresa, a profundidade, o avanço e a compensação 
 são ajustes da sua máquina e ficam no programa de CAM.
 
 No FlatCAM, use o Gerber e não o DXF. O FlatCAM lê as polilinhas do DXF como linhas, e não
-como áreas; o [guia da CNC](../guia_cnc/GUIA_CNC.md#por-que-o-flatcam-recebe-o-gerber-e-não-o-dxf)
+como áreas; o [guia da CNC](https://github.com/prof-davifr/lab-rf/blob/main/fabricacao/GUIA_CNC.md#por-que-o-flatcam-recebe-o-gerber-e-não-o-dxf)
 explica o problema.
 
 - Formato DXF R12, que abre em qualquer programa de CAD ou CAM (LibreCAD, FreeCAD, Inkscape,
@@ -75,7 +75,7 @@ seu programa de CAM:
   A margem em volta da antena segura a placa durante o recorte.
 - Um conector SMA fêmea de borda (*end launch*) para placa de 1,6 mm.
 - Fresas: uma em V de 30° com ponta de 0,1 mm, uma de topo de 0,8 mm e uma de 1,5 a 2 mm
-  para o recorte (veja o [guia da CNC](../guia_cnc/GUIA_CNC.md)).
+  para o recorte (veja o [guia da CNC](https://github.com/prof-davifr/lab-rf/blob/main/fabricacao/GUIA_CNC.md)).
 - Quatro espaçadores de plástico de 3 mm (arruelas de náilon, por exemplo).
 - Amostras: chapas de metal com 10 mm de revestimento de polímero, de pelo menos
   100 x 80 mm. Uma fica seca, como referência.
@@ -85,7 +85,7 @@ seu programa de CAM:
 
 ### Fabricação na CNC
 
-Siga o [guia da fresadora CNC](../guia_cnc/GUIA_CNC.md). Ele usa este sensor como exemplo, com os
+Siga o [guia da fresadora CNC](https://github.com/prof-davifr/lab-rf/blob/main/fabricacao/GUIA_CNC.md). Ele usa este sensor como exemplo, com os
 arquivos `gerber/patch_2g45-F_Cu.gbr` e `gerber/patch_2g45-Edge_Cuts.gbr`.
 
 Para esta antena, preste atenção a três pontos:
@@ -116,6 +116,7 @@ diminua a profundidade de corte na próxima placa.
 1. Configure a varredura de 2,0 a 3,0 GHz, com pelo menos 401 pontos.
 2. Ligue o cabo que vai ficar na antena e calibre na ponta dele: aberto, curto e carga de
    50 ohm (calibração SOL). Assim o plano de referência fica no conector, como na simulação.
+   O [guia do VNA](https://github.com/prof-davifr/lab-rf/blob/main/medicao/GUIA_VNA.md) explica a calibração e a medição passo a passo.
 3. Ligue a antena. Deixe-a longe de mesa metálica, de paredes e das mãos (pelo menos 30 cm).
 4. Salve a medição em Touchstone (por exemplo, `ar.s1p`) e rode:
 
@@ -243,8 +244,9 @@ O que os números dizem:
 
 ## Como refazer a simulação
 
-Copie esta pasta para `Documentos/openEMS-notebooks`. No JupyterLab do openEMS Lab, abra um
-terminal (File > New > Terminal), entre na pasta com `cd patch_2g45` e rode:
+O instalador do openEMS Lab já copia esta pasta para
+`Documentos/openEMS-notebooks/projetos/patch_2g45`. No JupyterLab do openEMS Lab, abra um
+terminal (File > New > Terminal), entre na pasta com `cd projetos/patch_2g45` e rode:
 
 ```bash
 python geometria.py      # DXF, Gerber e desenho cotado (alguns segundos)

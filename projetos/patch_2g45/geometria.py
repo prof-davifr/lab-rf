@@ -131,7 +131,7 @@ def _coord(v):
 
 def _cabecalho(funcao, polaridade="Positive"):
     return [
-        "%TF.GenerationSoftware,openEMS-lab,patch_2g45,1.0*%",
+        "%TF.GenerationSoftware,lab-rf,patch_2g45,1.0*%",
         f"%TF.FileFunction,{funcao}*%",
         f"%TF.FilePolarity,{polaridade}*%",
         "%FSLAX46Y46*%",

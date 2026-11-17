@@ -1,8 +1,8 @@
 """Prepara a pasta de trabalho do aluno e abre o JupyterLab.
 
 Uso:
-    python abrir.py               copia os notebooks novos, cria o atalho e abre o Jupyter
-    python abrir.py --preparar    só copia os notebooks e cria o atalho
+    python abrir.py               copia os notebooks e projetos novos, cria o atalho e abre o Jupyter
+    python abrir.py --preparar    só copia os notebooks e projetos e cria o atalho
 """
 
 import os
@@ -53,7 +53,11 @@ def pasta_notebooks():
 
 
 def copiar_notebooks(destino):
-    """Copia só os notebooks que ainda não existem: nunca apaga o trabalho do aluno."""
+    """Copia só os notebooks e projetos que ainda não existem: nunca apaga o trabalho do aluno.
+
+    Cada projeto (uma pasta em projetos/) vai inteiro para destino/projetos/<nome>, e só
+    se a pasta ainda não existir.
+    """
     destino.mkdir(parents=True, exist_ok=True)
     novos = []
     for origem in sorted((RAIZ / "notebooks").glob("*.ipynb")):
@@ -61,6 +65,13 @@ def copiar_notebooks(destino):
         if not alvo.exists():
             shutil.copy2(origem, alvo)
             novos.append(origem.name)
+    projetos = RAIZ / "projetos"
+    if projetos.is_dir():
+        for origem in sorted(p for p in projetos.iterdir() if p.is_dir()):
+            alvo = destino / "projetos" / origem.name
+            if not alvo.exists():
+                shutil.copytree(origem, alvo, ignore=shutil.ignore_patterns("__pycache__"))
+                novos.append(f"projetos/{origem.name}")
     return novos
 
 
@@ -115,7 +126,7 @@ def preparar():
     notebooks = pasta_notebooks()
     novos = copiar_notebooks(notebooks)
     if novos:
-        print(f"Notebooks novos copiados para {notebooks}:")
+        print(f"Notebooks e projetos novos copiados para {notebooks}:")
         for nome in novos:
             print(f"  - {nome}")
     atalho = criar_atalho()

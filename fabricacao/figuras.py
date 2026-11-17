@@ -1,6 +1,6 @@
 """Figuras esquemáticas do guia da CNC.
 
-Usa a geometria real do sensor (../patch_2g45/geometria.py). As capturas de tela dos
+Usa a geometria real do sensor (../projetos/patch_2g45/geometria.py). As capturas de tela dos
 programas ficam em img/ e não são geradas aqui.
 
     python figuras.py
@@ -19,7 +19,7 @@ from shapely.ops import unary_union
 
 AQUI = Path(__file__).resolve().parent
 IMG = AQUI / "img"
-sys.path.insert(0, str(AQUI.parent / "patch_2g45"))
+sys.path.insert(0, str(AQUI.parent / "projetos" / "patch_2g45"))
 from geometria import Antena  # noqa: E402
 
 A = Antena()

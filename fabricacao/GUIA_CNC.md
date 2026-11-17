@@ -1,10 +1,14 @@
 # Guia da fresadora CNC para fabricar antenas em placa de circuito
 
+<!-- pdf-cabecalho: Guia da fresadora CNC -->
+<!-- pdf-subtitulo: Da placa de FR-4 à antena pronta para o conector, só com programas livres: FlatCAM, bCNC e GRBL -->
+<!-- pdf-capa: img/placa_na_mesa.png -->
+
 Este guia mostra como fresar uma antena em FR-4 na fresadora CNC do laboratório, do
 arquivo da antena até a placa pronta para soldar o conector. Ele usa só programas livres
 e de código aberto, que rodam no Windows e no Linux.
 
-O exemplo do guia é o sensor patch de [patch_2g45](../patch_2g45). Para outra antena, troque
+O exemplo do guia é o sensor patch de [projetos/patch_2g45](../projetos/patch_2g45). Para outra antena, troque
 os arquivos e mantenha os passos.
 
 Este guia substitui o guia anterior do laboratório. As mudanças principais são:
@@ -95,8 +99,8 @@ Abra um terminal, cole o comando abaixo e tecle Enter. Ele instala todos os prog
 tabela e pede a senha do computador quando precisar.
 
 ```bash
-URL=https://raw.githubusercontent.com/prof-davifr/openEMS-lab/main
-curl -fsSL $URL/fabricacao/guia_cnc/instalar_linux.sh | bash
+URL=https://raw.githubusercontent.com/prof-davifr/lab-rf/main
+curl -fsSL $URL/fabricacao/instalar_linux.sh | bash
 ```
 
 Espere a mensagem **INSTALACAO OK**. Depois, saia da sessão e entre de novo, para o bCNC ter
@@ -294,9 +298,13 @@ muda a ressonância.
 ### 5.1 Abrir os arquivos
 
 1. Em **Edit > Preferences > General**, escolha a unidade **MM**.
-2. Em **File > Open > Open Gerber**, abra os dois arquivos da antena:
+2. Em **File > Open > Open Gerber**, abra os dois arquivos da antena, na pasta `gerber` do
+   projeto:
    - `patch_2g45-F_Cu.gbr`, o cobre de cima;
    - `patch_2g45-Edge_Cuts.gbr`, o contorno da placa.
+
+   O projeto fica em `projetos/patch_2g45` no repositório. Com o openEMS Lab instalado, ele
+   também fica em `Documentos/openEMS-notebooks/projetos/patch_2g45`.
 3. Confira as medidas com a ferramenta de distância (**Tools > Distance Tool**). A placa
    tem de medir 45 x 32 mm.
 
@@ -564,7 +572,7 @@ fresa em V desceu fundo demais: diminua a profundidade ou confira o mapa de altu
   no LibreCAD e gere o G-code a partir do DXF (o bCNC e o FlatCAM fazem contornos e rebaixos
   em DXF).
 - **Antenas novas.** Desenhe a antena no KiCad (camadas `F.Cu` e `Edge.Cuts`) e grave o
-  Gerber, ou escreva a geometria em Python, como em `patch_2g45/geometria.py`. Depois, siga
+  Gerber, ou escreva a geometria em Python, como em `projetos/patch_2g45/geometria.py`. Depois, siga
   este guia a partir da seção 5.
 
 ---

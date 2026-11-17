@@ -1,9 +1,15 @@
-"""Gera GUIA_CNC.pdf a partir de GUIA_CNC.md.
+"""Gera o PDF de um guia em Markdown (o PDF fica ao lado do .md, com o mesmo nome).
 
 Precisa do pacote Python `markdown` e do programa `weasyprint` (os dois são livres):
 
     pip install markdown weasyprint
-    python gerar_pdf.py
+    python docs/gerar_pdf.py fabricacao/GUIA_CNC.md medicao/GUIA_VNA.md
+
+Comentários no .md controlam a capa e o cabeçalho das páginas:
+
+    <!-- pdf-cabecalho: Guia da fresadora CNC -->
+    <!-- pdf-subtitulo: texto embaixo do título, na capa -->
+    <!-- pdf-capa: img/figura_da_capa.png -->
 
 As figuras numeradas vêm das imagens do Markdown. O texto entre colchetes vira a legenda,
 e o título da imagem (entre aspas, depois do arquivo) vira a fonte. Sem título, a fonte é
@@ -22,16 +28,13 @@ from pathlib import Path
 import markdown
 from markdown.extensions.toc import TocExtension, slugify_unicode
 
-AQUI = Path(__file__).resolve().parent
-ORIGEM = AQUI / "GUIA_CNC.md"
-DESTINO = AQUI / "GUIA_CNC.pdf"
 MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto",
          "setembro", "outubro", "novembro", "dezembro"]
 
 CSS = """
 @page {
   size: A4; margin: 22mm 20mm 22mm 20mm;
-  @top-right { content: "Guia da fresadora CNC"; font-size: 8pt; color: #777; }
+  @top-right { content: "%CABECALHO%"; font-size: 8pt; color: #777; }
   @bottom-center { content: counter(page) " de " counter(pages); font-size: 8pt; color: #777; }
 }
 @page capa { @top-right { content: none; } @bottom-center { content: none; } }
@@ -124,9 +127,18 @@ def _recuos(texto):
     return "\n".join(saida)
 
 
-def montar_html():
-    texto = ORIGEM.read_text(encoding="utf-8")
+def _opcao(texto, nome, padrao=""):
+    m = re.search(rf"<!--\s*pdf-{nome}:\s*(.*?)\s*-->", texto)
+    return m.group(1) if m else padrao
+
+
+def montar_html(origem):
+    texto = origem.read_text(encoding="utf-8")
     titulo = texto.splitlines()[0].lstrip("# ").strip()
+    cabecalho = _opcao(texto, "cabecalho", titulo)
+    subtitulo = _opcao(texto, "subtitulo")
+    figura_capa = _opcao(texto, "capa")
+    texto = re.sub(r"<!--\s*pdf-.*?-->\n?", "", texto)
     texto = "\n".join(texto.splitlines()[1:])
     # o PDF tem sumário próprio, com páginas
     texto = re.sub(r"\n## Sumário\n.*?\n---\n", "\n", texto, flags=re.S)
@@ -146,28 +158,34 @@ def montar_html():
     sumario = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in itens)
     hoje = date.today()
     capa = (f'<section class="capa"><h1>{html.escape(titulo)}</h1>'
-            f'<p class="sub">Da placa de FR-4 à antena pronta para o conector, só com programas '
-            f'livres: FlatCAM, bCNC e GRBL</p>'
-            f'<img src="img/placa_na_mesa.png" alt="">'
-            f'<p class="data">{MESES[hoje.month - 1]} de {hoje.year}</p></section>')
+            + (f'<p class="sub">{html.escape(subtitulo)}</p>' if subtitulo else "")
+            + (f'<img src="{figura_capa}" alt="">' if figura_capa else "")
+            + f'<p class="data">{MESES[hoje.month - 1]} de {hoje.year}</p></section>')
+    css = CSS.replace("%CABECALHO%", cabecalho.replace('"', "'"))
     nav = (f'<nav class="sumario">{intro_html}<h2 class="continua">Sumário</h2>'
            f'<ol>{sumario}</ol></nav>')
     return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
-            f'<title>{html.escape(titulo)}</title><style>{CSS}</style></head>'
+            f'<title>{html.escape(titulo)}</title><style>{css}</style></head>'
             f'<body>{capa}{nav}{corpo}</body></html>')
 
 
-def main():
+def main(arquivos):
+    if not arquivos:
+        sys.exit(__doc__)
     weasy = shutil.which("weasyprint")
     if not weasy:
         sys.exit("weasyprint não encontrado. Instale com: pip install weasyprint")
-    with tempfile.TemporaryDirectory() as tmp:
-        arq = Path(tmp) / "guia.html"
-        arq.write_text(montar_html(), encoding="utf-8")
-        subprocess.run([weasy, "-q", "-u", AQUI.as_uri() + "/", str(arq), str(DESTINO)],
-                       check=True)
-    print("gravado:", DESTINO.name)
+    for nome in arquivos:
+        origem = Path(nome).resolve()
+        destino = origem.with_suffix(".pdf")
+        with tempfile.TemporaryDirectory() as tmp:
+            arq = Path(tmp) / "guia.html"
+            arq.write_text(montar_html(origem), encoding="utf-8")
+            # as imagens do .md são relativas à pasta dele
+            subprocess.run([weasy, "-q", "-u", origem.parent.as_uri() + "/", str(arq), str(destino)],
+                           check=True)
+        print("gravado:", destino)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
