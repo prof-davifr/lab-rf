@@ -2,7 +2,9 @@
 
 Roda no openEMS Lab (o mesmo Python dos notebooks):
 
-    python simular.py
+    python simular.py                 # todas as etapas
+    python simular.py --etapa 1       # somente a antena no ar
+    python simular.py --etapa 2       # somente a antena sobre a amostra
 
 São 12 simulações, em duas etapas. Leva de 30 a 90 minutos, conforme o computador.
 
@@ -37,14 +39,15 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 from openEMS import openEMS
 from openEMS.physical_constants import C0, EPS0
 
-from geometria import AQUI, Antena
+from geometria import AQUI, Antena, desenhar, gravar_dxf, gravar_gerber
 
 F_MIN, F_MAX = 2.0, 3.0      # GHz, faixa dos resultados (igual à varredura sugerida no VNA)
-F0, FC = 2.5e9, 1.0e9        # pulso gaussiano: 1,5 a 3,5 GHz
+GRAFICO_F_MIN, GRAFICO_F_MAX = 2.0, 3.0  # GHz, faixa exibida nos gráficos S11
+F0, FC = 2.5e9, 1.0e9        # pulso gaussiano centrado em 2,5 GHz, largura 1,0 GHz
 MARGEM_AR = 40.0             # mm de ar entre a placa e o contorno
 RES_PLACA = 1.0              # mm, malha sobre a placa
 RES_FINA = 0.35              # mm, malha na região da linha e do inset
-RES_AR = C0 / 3.5e9 / 1e-3 / 20  # mm, lambda/20 na maior frequência do pulso
+RES_AR = C0 / (F0 + FC) / 1e-3 / 20  # mm, lambda/20 na maior frequência do pulso
 PASTA_RESULTADOS = AQUI / "resultados"
 
 
@@ -285,10 +288,11 @@ def gravar_curvas_csv(resultados, arquivo):
 
 def _eixos_s11(ax, titulo, ymin):
     ax.axhline(-10, color="r", lw=0.8, ls=":")
-    ax.axvspan(2.400, 2.4835, color="0.88", zorder=0, label="faixa ISM de 2,4 GHz")
+    ax.axvspan(2.400, 2.500, color="tab:orange", alpha=0.12, zorder=0,
+               label="referência ISM de 2,4 GHz")
     ax.set_xlabel("frequência (GHz)")
     ax.set_ylabel("|S11| (dB)")
-    ax.set_xlim(F_MIN, F_MAX)
+    ax.set_xlim(GRAFICO_F_MIN, GRAFICO_F_MAX)
     ax.set_ylim(min(-35, ymin - 2), 0)
     ax.grid(alpha=0.3)
     ax.legend(fontsize=8, loc="lower left")
@@ -299,6 +303,9 @@ def grafico_ar(nominal, variacoes, arquivo):
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(8, 4.8))
     todas = np.array([r.s11_db for r in [nominal] + variacoes])
+    banda = nominal.banda()
+    if banda:
+        ax.axvspan(*banda, color="0.88", zorder=0, label="nominal: S11 < −10 dB")
     ax.fill_between(nominal.f, todas.min(0), todas.max(0), color="tab:blue", alpha=0.15,
                     label="faixa esperada (variações)")
     for r in variacoes:
@@ -313,6 +320,9 @@ def grafico_ar(nominal, variacoes, arquivo):
 def grafico_umidade(umidade, gaps, arquivo):
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(8, 4.8))
+    banda = umidade[0].banda()
+    if banda:
+        ax.axvspan(*banda, color="0.88", zorder=0, label="amostra seca: S11 < −10 dB")
     cores = plt.cm.viridis_r(np.linspace(0.1, 0.95, len(umidade)))
     for r, c in zip(umidade, cores):
         ax.plot(r.f, r.s11_db, color=c, lw=2 if r.amostra.agua == 0 else 1.3,
@@ -374,7 +384,7 @@ def grafico_smith(res, arquivo, titulo):
     ax.set_xlim(-1.05, 1.05)
     ax.set_ylim(-1.05, 1.05)
     ax.axis("off")
-    ax.set_title(f"{titulo}\n(S11 de {F_MIN:g} a {F_MAX:g} GHz, Z0 = 50 ohm, frequências em GHz)")
+    ax.set_title(f"{titulo}\n(S11 de {res.f[0]:g} a {res.f[-1]:g} GHz, Z0 = 50 ohm, frequências em GHz)")
     fig.tight_layout()
     fig.savefig(arquivo, dpi=150)
     plt.close(fig)
@@ -387,7 +397,7 @@ def gravar_calibracao_csv(umidade, arquivo):
         w.writerow(["agua_pct_volume", "er_polimero", "tand_polimero", "f0_GHz", "delta_f0_MHz",
                     "S11_min_dB", "banda_10dB_MHz"])
         for r in umidade:
-            e = r.amostra.permissividade()
+            e = r.amostra.permissividade(r.antena.f_projeto)
             fr, smin = r.ressonancia()
             b = r.banda()
             w.writerow([f"{100 * r.amostra.agua:g}", f"{e.real:.3f}", f"{-e.imag / e.real:.4f}",
@@ -422,25 +432,29 @@ def _linha_tabela(rotulo, r, ref=None):
     return f"| {rotulo} | {fr:.3f}{desloc} | {smin:.1f} | {faixa} | {largura} |"
 
 
-def resumo(ar, var_ar, umidade, gaps, arquivo):
+PROJETO = AQUI.name  # nome da pasta do projeto: prefixo das pastas de simulação e título do resumo
+
+
+def _secao_ar(ar, var_ar):
+    linhas = ["## Etapa 1: antena no ar", "",
+              "| Caso | Ressonância (GHz) | S11 mínimo (dB) | Faixa com S11 < -10 dB (GHz) | Largura (MHz) |",
+              "|---|---|---|---|---|",
+              _linha_tabela("nominal", ar)]
+    linhas += [_linha_tabela(ROTULOS[r.nome], r) for r in var_ar]
+    return linhas
+
+
+def _secao_amostra(umidade, gaps):
     seca = umidade[0]
     f_seca = seca.ressonancia()[0]
-    linhas = ["# Resultados simulados: patch_2g45", "",
-              f"Antena: {ar.antena}", "",
-              "Referência: borda da placa, na entrada do SMA. Faixa simulada: "
-              f"{F_MIN:g} a {F_MAX:g} GHz.", "",
-              "## Etapa 1: antena no ar", "",
-              "| Caso | Ressonância (GHz) | S11 mínimo (dB) | Faixa com S11 < -10 dB (GHz) | Largura (MHz) |",
-              "|---|---|---|---|---|"]
-    linhas.append(_linha_tabela("nominal", ar))
-    linhas += [_linha_tabela(ROTULOS[r.nome], r) for r in var_ar]
-    linhas += ["", "## Etapa 2: antena sobre o revestimento", "",
-               f"Amostra seca: {seca.amostra}.", "",
-               "| Água no polímero | er / tand do polímero | Ressonância (GHz) | Deslocamento (MHz) "
-               "| S11 mínimo (dB) | Faixa com S11 < -10 dB (GHz) | Largura (MHz) |",
-               "|---|---|---|---|---|---|---|"]
+    f_antena = seca.antena.f_projeto  # a água tem er e tand diferentes em cada frequência
+    linhas = ["## Etapa 2: antena sobre o revestimento", "",
+              f"Amostra seca: {seca.amostra}.", "",
+              "| Água no polímero | er / tand do polímero | Ressonância (GHz) | Deslocamento (MHz) "
+              "| S11 mínimo (dB) | Faixa com S11 < -10 dB (GHz) | Largura (MHz) |",
+              "|---|---|---|---|---|---|---|"]
     for r in umidade:
-        e = r.amostra.permissividade()
+        e = r.amostra.permissividade(f_antena)
         rot = f"{100 * r.amostra.agua:g} % | {e.real:.2f} / {-e.imag / e.real:.3f}"
         linhas.append(_linha_tabela(rot, r, f_seca))
     linhas += ["", "Efeito do gap (amostra seca):", "",
@@ -448,43 +462,95 @@ def resumo(ar, var_ar, umidade, gaps, arquivo):
                "| Faixa com S11 < -10 dB (GHz) | Largura (MHz) |", "|---|---|---|---|---|---|"]
     for r in gaps:
         linhas.append(_linha_tabela(f"{r.amostra.gap:g} mm", r, f_seca))
+    return linhas
+
+
+def resumo(ar, var_ar, umidade, gaps, arquivo):
+    """Grava o resumo das etapas simuladas. `ar` ou `umidade` é None se a etapa não rodou."""
+    antena = ar.antena if ar is not None else umidade[0].antena
+    linhas = [f"# Resultados simulados: {PROJETO}", "",
+              f"Antena: {antena}", "",
+              "Referência: borda da placa, na entrada do SMA. Faixa simulada: "
+              f"{F_MIN:g} a {F_MAX:g} GHz.", ""]
+    if ar is not None:
+        linhas += _secao_ar(ar, var_ar)
+    if umidade is not None:
+        if ar is not None:
+            linhas.append("")
+        linhas += _secao_amostra(umidade, gaps)
     Path(arquivo).write_text("\n".join(linhas) + "\n", encoding="utf-8")
     print("\n".join(linhas))
 
 
-def main():
-    PASTA_RESULTADOS.mkdir(exist_ok=True)
-    a = Antena()
-    seca = Amostra()
-
-    ar = simular(a, "patch_2g45_ar")
+def etapa_ar(a, R):
+    """Etapa 1: antena no ar, nominal e três variações de fabricação (4 simulações)."""
+    print("\n##### Etapa 1: antena no ar (4 simulações)", flush=True)
+    ar = simular(a, f"{PROJETO}_ar")
     ar.nome = "ar"
     var_ar = []
     for n, v in variacoes(a):
-        var_ar.append(simular(v, f"patch_2g45_ar_{n}"))
+        var_ar.append(simular(v, f"{PROJETO}_ar_{n}"))
         var_ar[-1].nome = n
+    gravar_touchstone(ar, R / "s11_ar.s1p", "antena no ar")
+    gravar_csv(ar, R / "s11_ar.csv")
+    gravar_curvas_csv([ar] + var_ar, R / "s11_ar_variacoes.csv")
+    grafico_ar(ar, var_ar, R / "s11_ar.png")
+    grafico_smith(ar, R / "smith_ar.png", "Antena no ar")
+    return ar, var_ar
+
+
+def etapa_amostra(a, R):
+    """Etapa 2: antena sobre o revestimento, vários teores de água e dois gaps."""
+    print(f"\n##### Etapa 2: antena sobre o revestimento ({len(AGUA) + len(GAPS)} simulações)",
+          flush=True)
+    seca = Amostra()
     umidade = []
     for v in AGUA:
-        umidade.append(simular(a, f"patch_2g45_agua_{100 * v:g}pct", amostra=replace(seca, agua=v)))
+        umidade.append(simular(a, f"{PROJETO}_agua_{100 * v:g}pct", amostra=replace(seca, agua=v)))
         umidade[-1].nome = f"agua_{100 * v:g}pct"
     gaps = []
     for g in GAPS:
-        gaps.append(simular(a, f"patch_2g45_seca_gap_{g:g}mm", amostra=replace(seca, gap=g)))
+        gaps.append(simular(a, f"{PROJETO}_seca_gap_{g:g}mm", amostra=replace(seca, gap=g)))
         gaps[-1].nome = f"seca_gap_{g:g}mm"
-
-    R = PASTA_RESULTADOS
-    gravar_touchstone(ar, R / "s11_ar.s1p", "antena no ar")
     gravar_touchstone(umidade[0], R / "s11_amostra_seca.s1p", str(seca))
-    gravar_csv(ar, R / "s11_ar.csv")
-    gravar_curvas_csv([ar] + var_ar, R / "s11_ar_variacoes.csv")
     gravar_curvas_csv(umidade + gaps, R / "s11_amostra.csv")
     gravar_calibracao_csv(umidade, R / "calibracao_umidade.csv")
-    grafico_ar(ar, var_ar, R / "s11_ar.png")
-    grafico_smith(ar, R / "smith_ar.png", "Antena no ar")
     grafico_smith(umidade[0], R / "smith_amostra_seca.png", "Antena sobre a amostra seca")
     grafico_umidade(umidade, gaps, R / "s11_amostra.png")
     grafico_calibracao(umidade, R / "calibracao_umidade.png")
-    resumo(ar, var_ar, umidade, gaps, R / "resumo.md")
+    return umidade, gaps
+
+
+def main(argv=None):
+    import argparse
+
+    p = argparse.ArgumentParser(
+        description="Simula o sensor e grava os resultados esperados em ./resultados.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Etapas:\n"
+               "  1  antena no ar: nominal e 3 variações de fabricação (4 simulações)\n"
+               "  2  antena sobre o revestimento: teores de água e gaps (8 simulações)\n"
+               "  todas  as duas, como antes (12 simulações; padrão)")
+    p.add_argument("--etapa", choices=["1", "2", "todas"], default="todas",
+                   help="qual etapa simular (padrão: todas)")
+    args = p.parse_args(argv)
+
+    PASTA_RESULTADOS.mkdir(exist_ok=True)
+    R = PASTA_RESULTADOS
+    a = Antena()
+    gravar_dxf(a)
+    gravar_gerber(a)
+    desenhar(a, R / "desenho_cotado.png")
+    ar = var_ar = umidade = gaps = None
+    if args.etapa in ("1", "todas"):
+        ar, var_ar = etapa_ar(a, R)
+    if args.etapa in ("2", "todas"):
+        umidade, gaps = etapa_amostra(a, R)
+
+    # numa execução parcial, não sobrescreve o resumo.md completo de uma execução anterior
+    nome_resumo = "resumo.md" if args.etapa == "todas" else f"resumo_etapa{args.etapa}.md"
+    resumo(ar, var_ar, umidade, gaps, R / nome_resumo)
+    print(f"\nResultados gravados em: {R}")
 
 
 if __name__ == "__main__":

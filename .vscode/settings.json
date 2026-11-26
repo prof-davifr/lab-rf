@@ -1,0 +1,3 @@
+{
+    "python.defaultInterpreterPath": "${env:HOME}/.local/share/openEMS-lab/venv/bin/python"
+}
