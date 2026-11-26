@@ -1,0 +1,15 @@
+%TF.GenerationSoftware,lab-rf,patch_3g50,1.0*%
+%TF.FileFunction,Copper,L2,Bot*%
+%TF.FilePolarity,Positive*%
+%FSLAX46Y46*%
+%MOMM*%
+%LPD*%
+G01*
+G36*
+X0Y0D02*
+X35000000Y0D01*
+X35000000Y38000000D01*
+X0Y38000000D01*
+X0Y0D01*
+G37*
+M02*
