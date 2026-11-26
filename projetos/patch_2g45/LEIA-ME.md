@@ -249,9 +249,18 @@ O instalador do openEMS Lab já copia esta pasta para
 terminal (File > New > Terminal), entre na pasta com `cd projetos/patch_2g45` e rode:
 
 ```bash
-python geometria.py      # DXF, Gerber e desenho cotado (alguns segundos)
-python simular.py        # 12 simulações e gráficos (de 30 a 90 minutos)
+python geometria.py          # DXF, Gerber e desenho cotado (alguns segundos)
+python simular.py --etapa 1  # antena no ar: 4 simulações
+python simular.py --etapa 2  # amostra: 6 teores de água e 2 gaps
+python simular.py            # as duas etapas: 12 simulações
 ```
+
+Cada execução de `simular.py` também gera os arquivos de geometria e o desenho cotado.
+As execuções parciais gravam `resultados/resumo_etapa1.md` ou
+`resultados/resumo_etapa2.md`, sem sobrescrever o resumo completo. A execução sem
+`--etapa` grava `resultados/resumo.md`. Os gráficos S11 destacam a faixa abaixo de
+−10 dB do caso nominal no ar ou da amostra seca; a faixa ISM de 2,4 GHz permanece
+indicada como referência separada.
 
 Para mudar o sensor, mude os valores da classe `Antena` em `geometria.py`. Para mudar a
 amostra (espessura, er, gap), mude a classe `Amostra` em `simular.py`. A simulação, o DXF e o
